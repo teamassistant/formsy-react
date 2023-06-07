@@ -4,12 +4,30 @@ import TestUtils from 'react-addons-test-utils';
 
 import Formsy from './..';
 import TestInput from './utils/TestInput';
+import TestInputHoc from './utils/TestInputHoc';
 import immediate from './utils/immediate';
 import sinon from 'sinon';
 
 export default {
 
   'Setting up a form': {
+    'should expose the users DOM node through an innerRef prop': function (test) {
+      const TestForm = React.createClass({
+        render() {
+          return (
+            <Formsy.Form>
+              <TestInputHoc name="name" innerRef={(c) => { this.name = c; }} />
+            </Formsy.Form>
+          );
+        }
+      });
+
+      const form = TestUtils.renderIntoDocument(<TestForm/>);
+      const input = form.name;
+      test.equal(input.methodOnWrappedInstance('foo'), 'foo');
+
+      test.done();
+    },
 
     'should render a form into the document': function (test) {
 
@@ -647,6 +665,30 @@ export default {
       test.done();
 
     }
+
+  },
+
+  'should be able to reset the form to empty values': function (test) {
+
+    const TestForm = React.createClass({
+      render() {
+        return (
+          <Formsy.Form>
+            <TestInput name="foo" value="42" type="checkbox" />
+            <button type="submit">Save</button>
+          </Formsy.Form>
+        );
+      }
+    });
+    const form = TestUtils.renderIntoDocument(<TestForm/>);
+    const input = TestUtils.findRenderedComponentWithType(form, TestInput);
+    const formsyForm = TestUtils.findRenderedComponentWithType(form, Formsy.Form);
+
+    formsyForm.reset({
+      foo: ''
+    });
+    test.equal(input.getValue(), '');
+    test.done();
 
   },
 

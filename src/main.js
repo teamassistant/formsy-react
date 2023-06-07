@@ -1,4 +1,6 @@
+var PropTypes = require('prop-types');
 var React = global.React || require('react');
+var createReactClass = require('create-react-class');
 var Formsy = {};
 var validationRules = require('./validationRules.js');
 var formDataToObject = require('form-data-to-object');
@@ -12,6 +14,7 @@ var emptyArray = [];
 Formsy.Mixin = Mixin;
 Formsy.HOC = HOC;
 Formsy.Decorator = Decorator;
+Formsy.validationRules = validationRules;
 
 Formsy.defaults = function (passedOptions) {
   options = passedOptions;
@@ -21,11 +24,12 @@ Formsy.addValidationRule = function (name, func) {
   validationRules[name] = func;
 };
 
-Formsy.Form = React.createClass({
+Formsy.Form = createReactClass({
   displayName: 'Formsy',
   getInitialState: function () {
     return {
       isValid: true,
+      isValidWithoutRequire: true,
       isSubmitting: false,
       canChange: false
     };
@@ -37,7 +41,7 @@ Formsy.Form = React.createClass({
       onSubmit: function () {},
       onValidSubmit: function () {},
       onInvalidSubmit: function () {},
-      onSubmitted: function () {},
+      onValidSubmitIgnoreRequired: function () {},
       onValid: function () {},
       onInvalid: function () {},
       onChange: function () {},
@@ -47,7 +51,7 @@ Formsy.Form = React.createClass({
   },
 
   childContextTypes: {
-    formsy: React.PropTypes.object
+    formsy: PropTypes.object
   },
   getChildContext: function () {
     return {
@@ -108,9 +112,21 @@ Formsy.Form = React.createClass({
     // so validation becomes visible (if based on isPristine)
     this.setFormPristine(false);
     var model = this.getModel();
-    this.props.onSubmit(model, this.resetModel, this.updateInputsWithError);
-    this.state.isValid ? this.props.onValidSubmit(model, this.resetModel, this.updateInputsWithError) : this.props.onInvalidSubmit(model, this.resetModel, this.updateInputsWithError);
 
+    var handleSubmit = function() {
+      this.props.onSubmit(model, this.resetModel, this.updateInputsWithError);
+      if (this.state.isValid) {
+        this.props.onValidSubmit(model, this.resetModel, this.updateInputsWithError);
+      }
+      else if (this.state.isValidWithoutRequire && !this.state.isValid) {
+        this.props.onValidSubmitIgnoreRequired(model, this.resetModel, this.updateInputsWithError);
+      }
+      else {
+        this.props.onInvalidSubmit(model, this.resetModel, this.updateInputsWithError);
+      }
+    }.bind(this);
+
+    this.validateForm(handleSubmit);
   },
 
   mapModel: function (model) {
@@ -118,7 +134,7 @@ Formsy.Form = React.createClass({
     if (this.props.mapping) {
       return this.props.mapping(model)
     } else {
-      return formDataToObject(Object.keys(model).reduce((mappedModel, key) => {
+      return formDataToObject.toObj(Object.keys(model).reduce((mappedModel, key) => {
 
         var keyArray = key.split('.');
         var base = mappedModel;
@@ -142,7 +158,7 @@ Formsy.Form = React.createClass({
   resetModel: function (data) {
     this.inputs.forEach(component => {
       var name = component.props.name;
-      if (data && data[name]) {
+      if (data && data.hasOwnProperty(name)) {
         component.setValue(data[name]);
       } else {
         component.resetValue();
@@ -236,10 +252,10 @@ Formsy.Form = React.createClass({
     component.setState({
       _isValid: validation.isValid,
       _isRequired: validation.isRequired,
+      _isValidWithoutRequire: validation.isValidWithoutRequire,
       _validationError: validation.error,
       _externalError: null
-    }, this.validateForm);
-
+    });
   },
 
   // Checks validation on current value or a passed value
@@ -259,11 +275,13 @@ Formsy.Form = React.createClass({
     }
 
     var isRequired = Object.keys(component._requiredValidations).length ? !!requiredResults.success.length : false;
-    var isValid = !validationResults.failed.length && !(this.props.validationErrors && this.props.validationErrors[component.props.name]);
+    var isValid = (!isRequired && (value === undefined || value === '' || value === false || value === null || (Array.isArray(value) && value.length == 0))) ||
+      !validationResults.failed.length && !(this.props.validationErrors && this.props.validationErrors[component.props.name]);
 
     return {
       isRequired: isRequired,
       isValid: isRequired ? false : isValid,
+      isValidWithoutRequire: isValid,
       error: (function () {
 
         if (isValid && !isRequired) {
@@ -350,7 +368,7 @@ Formsy.Form = React.createClass({
 
   // Validate the form by going through all child input components
   // and check their state
-  validateForm: function () {
+  validateForm: function (cb) {
 
     // We need a callback as we are validating all inputs again. This will
     // run when the last component has set its state
@@ -359,8 +377,17 @@ Formsy.Form = React.createClass({
         return component.state._isValid;
       });
 
+    var allIsValidWithoutRequire = this.inputs.every(component => {
+        return component.state._isValidWithoutRequire;
+      });
+
       this.setState({
-        isValid: allIsValid
+        isValid: allIsValid,
+        isValidWithoutRequire: allIsValidWithoutRequire,
+        // Tell the form that it can start to trigger change events
+        canChange: true
+      }, function() {
+        if (cb) cb();
       });
 
       if (allIsValid) {
@@ -368,12 +395,6 @@ Formsy.Form = React.createClass({
       } else {
         this.props.onInvalid();
       }
-
-      // Tell the form that it can start to trigger change events
-      this.setState({
-        canChange: true
-      });
-
     }.bind(this);
 
     // Run validation again in case affected by other inputs. The
@@ -386,6 +407,7 @@ Formsy.Form = React.createClass({
       component.setState({
         _isValid: validation.isValid,
         _isRequired: validation.isRequired,
+        _isValidWithoutRequire: validation.isValidWithoutRequire,
         _validationError: validation.error,
         _externalError: !validation.isValid && component.state._externalError ? component.state._externalError : null
       }, index === this.inputs.length - 1 ? onValidationComplete : null);
@@ -393,9 +415,11 @@ Formsy.Form = React.createClass({
 
     // If there are no inputs, set state where form is ready to trigger
     // change event. New inputs might be added later
-    if (!this.inputs.length && this.isMounted()) {
+    if (!this.inputs.length) {
       this.setState({
         canChange: true
+      }, function() {
+        if (cb) cb();
       });
     }
   },
@@ -429,8 +453,10 @@ Formsy.Form = React.createClass({
       validationErrors,
       onSubmit,
       onValid,
+      onValidSubmit,
       onInvalid,
       onInvalidSubmit,
+      onValidSubmitIgnoreRequired,
       onChange,
       reset,
       preventExternalInvalidation,

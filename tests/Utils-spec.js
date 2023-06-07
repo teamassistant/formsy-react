@@ -23,7 +23,12 @@ export default {
 
     test.equal(utils.isSame(objG, objH), true);
     test.equal(utils.isSame(objA, objH), false);
+    test.equal(utils.isSame(objC, objH), false);
     test.equal(utils.isSame(objG, objA), false);
+
+    test.equal(utils.isSame(() => {}, () => {}), true);
+    test.equal(utils.isSame(objA, () => {}), false);
+    test.equal(utils.isSame(() => {}, objA), false);
 
     test.done();
 

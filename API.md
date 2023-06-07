@@ -1,6 +1,5 @@
 # API
 
-- [Formsy.defaults - DEPRECATED](#formsydefaults)
 - [Formsy.Form](#formsyform)
   - [className](#classname)
   - [mapping](#mapping)
@@ -24,9 +23,9 @@
   - [required](#required)
   - [getValue()](#getvalue)
   - [setValue()](#setvalue)
-  - [hasValue() - DEPRECATED](#hasvalue)
   - [resetValue()](#resetvalue)
   - [getErrorMessage()](#geterrormessage)
+  - [getErrorMessages()](#geterrormessages)
   - [isValid()](#isvalid)
   - [isValidValue()](#isvalidvalue)
   - [isRequired()](#isrequired)
@@ -38,11 +37,10 @@
   - [validate](#validate)
   - [formNoValidate](#formnovalidate)
 - [Formsy.HOC](#formsyhoc)
+  - [innerRef](#innerRef)
 - [Formsy.Decorator](#formsydecorator)
 - [Formsy.addValidationRule](#formsyaddvalidationrule)
 - [Validators](#validators)
-
-### <a name="formsydefaults">Formsy.defaults(options) - DEPRECATED</a>
 
 ### <a name="formsyform">Formsy.Form</a>
 
@@ -251,7 +249,7 @@ You should always use the [**getValue()**](#getvalue) method inside your formsy 
   }
 }}/>
 ```
-An comma separated list with validation rules. Take a look at [**Validators**](#validators) to see default rules. Use ":" to separate argument passed to the validator. The argument will go through a **JSON.parse** converting them into correct JavaScript types. Meaning:
+A comma separated list with validation rules. Take a look at [**Validators**](#validators) to see default rules. Use ":" to separate argument passed to the validator. The argument will go through a **JSON.parse** converting them into correct JavaScript types. Meaning:
 
 ```jsx
 <MyInputComponent name="fruit" validations="isIn:['apple', 'orange']"/>
@@ -322,25 +320,6 @@ var MyInput = React.createClass({
 ```
 Sets the value of your form input component. Notice that it does not have to be a text input. Anything can set a value on the component. Think calendars, checkboxes, autocomplete stuff etc. Running this method will trigger a **setState()** on the component and do a render.
 
-#### <a name="hasvalue">hasValue() - DEPRECATED</a>
-```jsx
-var MyInput = React.createClass({
-  mixins: [Formsy.Mixin],
-  changeValue: function (event) {
-    this.setValue(event.currentTarget.value);
-  },
-  render: function () {
-    return (
-      <div>
-        <input type="text" onChange={this.changeValue} value={this.getValue()}/>
-        {this.hasValue() ? 'There is a value here' : 'No value entered yet'}
-      </div>
-    );
-  }
-});
-```
-The hasValue() method helps you identify if there actually is a value or not. The only invalid value in Formsy is an empty string, "". All other values are valid as they could be something you want to send to the server. F.ex. the number zero (0), or false.
-
 #### <a name="resetvalue">resetValue()</a>
 ```jsx
 var MyInput = React.createClass({
@@ -378,6 +357,9 @@ var MyInput = React.createClass({
 });
 ```
 Will return the validation message set if the form input component is invalid. If form input component is valid it returns **null**.
+
+#### <a name="geterrormessages">getErrorMessages()</a>
+Will return the validation messages set if the form input component is invalid. If form input component is valid it returns empty array.
 
 #### <a name="isvalid">isValid()</a>
 ```jsx
@@ -585,7 +567,7 @@ The same methods as the mixin are exposed to the HOC version of the element comp
 ```jsx
 import {HOC} from 'formsy-react';
 
-class MyInput extends React.Component {
+class MyInputHoc extends React.Component {
   render() {
     return (
       <div>
@@ -594,7 +576,26 @@ class MyInput extends React.Component {
     );
   }
 };
-export default HOC(MyInput);
+export default HOC(MyInputHoc);
+```
+
+#### <a name="innerRef">innerRef</a>
+
+Use an `innerRef` prop to get a reference to your DOM node.
+
+```jsx
+var MyForm = React.createClass({
+  componentDidMount() {
+    this.searchInput.focus()
+  },
+  render: function () {
+    return (
+      <Formsy.Form>
+        <MyInputHoc name="search" innerRef={(c) => { this.searchInput = c; }} />
+      </Formsy.Form>
+    );
+  }
+})
 ```
 
 ### <a name="formsydecorator">Formsy.Decorator</a>
@@ -623,7 +624,7 @@ Formsy.addValidationRule('isFruit', function (values, value) {
 });
 ```
 ```jsx
-<MyInputComponent name="fruit" validations="'isFruit"/>
+<MyInputComponent name="fruit" validations="isFruit"/>
 ```
 Another example:
 ```jsx
@@ -655,6 +656,8 @@ Formsy.addValidationRule('isMoreThan', function (values, value, otherField) {
 }}/>
 ```
 Returns true if the value is thruthful
+
+_For more complicated regular expressions (emoji, international characters) you can use [xregexp](https://github.com/slevithan/xregexp). See [this comment](https://github.com/christianalfoni/formsy-react/issues/407#issuecomment-266306783) for an example._
 
 **isEmail**
 ```jsx
@@ -763,7 +766,8 @@ Returns true if the value length is the equal.
 ```jsx
 <MyInputComponent name="number" validations="minLength:1"/>
 ```
-Return true if the value is more or equal to argument
+Return true if the value is more or equal to argument.
+**Also returns true for an empty value.** If you want to get false, then you should use [`required`](#required) additionally.
 
 **maxLength:length**
 ```jsx

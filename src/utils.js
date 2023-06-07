@@ -30,8 +30,10 @@ module.exports = {
   isSame: function (a, b) {
     if (typeof a !== typeof b) {
       return false;
-    } else if (Array.isArray(a)) {
+    } else if (Array.isArray(a) && Array.isArray(b)) {
       return !this.arraysDiffer(a, b);
+    } else if (typeof a === 'function') {
+      return a.toString() === b.toString();
     } else if (typeof a === 'object' && a !== null && b !== null) {
       return !this.objectsDiffer(a, b);
     }

@@ -8,7 +8,8 @@ var isEmpty = function (value) {
 
 var validations = {
   isDefaultRequiredValue: function (values, value) {
-    return value === undefined || value === '';
+    return value === undefined || value === '' || value === null || value === false || (Array.isArray(value) && value.length == 0);
+    // === false for checkbox(required) using, value.length == 0 testing empty array, value === null for implicit empty selectbox value
   },
   isExisty: function (values, value) {
     return isExisty(value);

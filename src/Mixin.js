@@ -54,7 +54,7 @@ module.exports = {
     };
   },
 
-  componentWillMount: function () {
+  UNSAFE_componentWillMount: function () {
     var configure = function () {
       this.setValidations(this.props.validations, this.props.required);
 
@@ -82,7 +82,7 @@ module.exports = {
   },
 
   // We have to make the validate method is kept when new props are added
-  componentWillReceiveProps: function (nextProps) {
+  UNSAFE_componentWillReceiveProps: function (nextProps) {
     this.setValidations(nextProps.validations, nextProps.required);
 
   },

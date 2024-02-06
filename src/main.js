@@ -69,7 +69,7 @@ Formsy.Form = createReactClass({
 
   // Add a map to store the inputs of the form, a model to store
   // the values of the form and register child inputs
-  componentWillMount: function () {
+  UNSAFE_componentWillMount: function () {
     this.inputs = [];
   },
 
@@ -77,7 +77,7 @@ Formsy.Form = createReactClass({
     this.validateForm();
   },
 
-  componentWillUpdate: function () {
+  UNSAFE_componentWillUpdate: function () {
     // Keep a reference to input names before form updates,
     // to check if inputs has changed after render
     this.prevInputNames = this.inputs.map(component => component.props.name);

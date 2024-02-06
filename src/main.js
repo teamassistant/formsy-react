@@ -1,3 +1,5 @@
+function _objectWithoutProperties(obj, keys) { var target = {}; for (var i in obj) { if (keys.indexOf(i) >= 0) continue; if (!Object.prototype.hasOwnProperty.call(obj, i)) continue; target[i] = obj[i]; } return target; }
+
 var PropTypes = require('prop-types');
 var React = global.React || require('react');
 var createReactClass = require('create-react-class');
@@ -448,27 +450,27 @@ Formsy.Form = createReactClass({
     this.validateForm();
   },
   render: function () {
-    var {
-      mapping,
-      validationErrors,
-      onSubmit,
-      onValid,
-      onValidSubmit,
-      onInvalid,
-      onInvalidSubmit,
-      onValidSubmitIgnoreRequired,
-      onChange,
-      reset,
-      preventExternalInvalidation,
-      onSuccess,
-      onError,
-      ...nonFormsyProps
-    } = this.props;
+    var _props = this.props;
+    var mapping = _props.mapping;
+    var validationErrors = _props.validationErrors;
+    var onSubmit = _props.onSubmit;
+    var onValid = _props.onValid;
+    var onValidSubmit = _props.onValidSubmit;
+    var onInvalid = _props.onInvalid;
+    var onInvalidSubmit = _props.onInvalidSubmit;
+    var onValidSubmitIgnoreRequired = _props.onValidSubmitIgnoreRequired;
+    var onChange = _props.onChange;
+    var reset = _props.reset;
+    var preventExternalInvalidation = _props.preventExternalInvalidation;
+    var onSuccess = _props.onSuccess;
+    var onError = _props.onError;
 
-    return (
-      <form {...nonFormsyProps} onSubmit={this.submit}>
-        {this.props.children}
-      </form>
+    var nonFormsyProps = _objectWithoutProperties(_props, ['mapping', 'validationErrors', 'onSubmit', 'onValid', 'onValidSubmit', 'onInvalid', 'onInvalidSubmit', 'onValidSubmitIgnoreRequired', 'onChange', 'reset', 'preventExternalInvalidation', 'onSuccess', 'onError']);
+
+    return React.createElement(
+      'form',
+      Object.assign({}, nonFormsyProps, { onSubmit: this.submit }),
+      this.props.children
     );
 
   }

@@ -8,7 +8,7 @@ module.exports = function (Component) {
 
     render: function () {
       const { innerRef } = this.props;
-      const propsForElement = {
+      const propsForElement = Object.assign({
         setValidations: this.setValidations,
         setValue: this.setValue,
         resetValue: this.resetValue,
@@ -24,8 +24,7 @@ module.exports = function (Component) {
         showRequired: this.showRequired,
         showError: this.showError,
         isValidValue: this.isValidValue,
-        ...this.props
-      };
+      }, this.props);
 
       if (innerRef) {
         propsForElement.ref = innerRef;
